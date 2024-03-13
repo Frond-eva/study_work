@@ -23,6 +23,22 @@ function success(position) {
     });
 
     myMap.geoObjects.add(myPlacemark);
+
+    myMap.events.add('click', function (e) {
+        var coords = e.get('coords');
+
+        var newPlacemark = new ymaps.Placemark(coords, {
+            hintContent: "Метка",
+            balloonContent: "Новая метка"
+        });
+
+        myMap.geoObjects.add(newPlacemark);
+
+        // Сохраняем новую метку в localStorage
+        var savedPlacemarks = JSON.parse(localStorage.getItem('placemarks')) || [];
+        savedPlacemarks.push(coords);
+        localStorage.setItem('placemarks', JSON.stringify(savedPlacemarks));
+    });
 }
 
 function error(error) {
@@ -33,19 +49,4 @@ function error(error) {
     });
 }
 
-function enablePlacemark() {
-    map.events.add('click', function (e) {
-        var coords = e.get('coords');
 
-        if (placemark) {
-            map.geoObjects.remove(placemark);
-        }
-
-        placemark = new ymaps.Placemark(coords, {
-            hintContent: "Метка",
-            balloonContent: "Новая метка"
-        });
-
-        map.geoObjects.add(placemark);
-    });
-}

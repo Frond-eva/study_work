@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Map Application</title>
+  <script src="https://api-maps.yandex.ru/2.1/?apikey=9732c3d0-0678-479f-a279-949f11379261&lang=en_US"
+    type="text/javascript"></script>
+  <style>
+    #map {
+      height: 400px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <pre style="font-size: large; ">     Добро пожаловать на главную страницу нашего сайта! 
+    Наша карта предоставляет удобный инструмент для поиска и навигации.
+    Вы можете искать места, получать маршруты и использовать интерактивные функции. 
+    Мы постоянно работаем над улучшением функционала. 
+    Надеемся, что вы найдете нашу карту полезной!</pre>
+
+
+  <div id="map"></div>
+  <button id="find-me">Найти мою геолокацию</button>
+  <button id="remove-markers">Удаление Метки</button>
+  <button id="remove-routes">Удаление Маршрута</button>
+  <button id="add-custom-marker">Добавление кастомной-метки</button>
+
+  <script type="module" src="app_wt.js"></script>
+  <div class="weather">
+      <h2 class="weather__title">Погода в городе <span id="cityName"></span></h2>
+      <div class="weather__time">
+          <p class="weather__time" id="currentDateTime"></p>
+          <p class="weather__date" id="currentDate"></p>
+          <p class="weather__status" id="weatherDescription"></p>
+      </div>
+      <div class="weather__forecast">
+          <span class="weather__min" id="minTemp"></span>
+          <span class="weather__max" id="maxTemp"></span>
+      </div>
+      <p class="weather__humidity" id="humidity"></p>
+      <p class="weather__wind" id="windSpeed"></p>
+  </div>
+  
+  <script>
+    let map;
+    let markers = [];
+
+    ymaps.ready(init);
+
+    function init() {
+      map = new ymaps.Map("map", {
+        center: [0, 0],
+        zoom: 8
+      });
+
+      // Add event listener to find location button
+      document.getElementById("find-me").addEventListener("click", () => {
+        // Check if geolocation is supported by the browser
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition((position) => {
+            const userLocation = [
+              position.coords.latitude,
+              position.coords.longitude
+            ];
+            map.setCenter(userLocation);
+            const userMarker = new ymaps.Placemark(userLocation, {
+              hintContent: "Your Location",
+              balloonContent: "Your Location"
+            });
+            map.geoObjects.add(userMarker);
+            markers.push(userMarker);
+            saveMarkersToLocalStorage();
+            calculateAndDisplayRoute();
+          }, () => {
+            alert("Geolocation is not supported by your browser.");
+          });
+        } else {
+          alert("Geolocation is not supported by your browser.");
+        }
+      });
+
+      // Add event listener to add marker on map click
+      map.events.add('click', function (e) {
+        const coords = e.get('coords');
+        const newMarker = new ymaps.Placemark(coords, {
+          hintContent: "New Marker",
+          balloonContent: "New Marker"
+        });
+        map.geoObjects.add(newMarker);
+        markers.push(newMarker);
+        saveMarkersToLocalStorage();
+        calculateAndDisplayRoute();
+      });
+
+      // Load markers from local storage
+      loadMarkersFromLocalStorage();
+      calculateAndDisplayRoute();
+    }
+
+    function saveMarkersToLocalStorage() {
+      const markerData = markers.map(marker => {
+        return {
+          coordinates: marker.geometry.getCoordinates(),
+          label: marker.properties.get('hintContent')
+        };
+      });
+      localStorage.setItem("markers", JSON.stringify(markerData));
+    }
+
+    function loadMarkersFromLocalStorage() {
+      const storedMarkers = JSON.parse(localStorage.getItem("markers")) || [];
+      storedMarkers.forEach(data => {
+        const marker = new ymaps.Placemark(data.coordinates, {
+          hintContent: data.label,
+          balloonContent: data.label
+        });
+        map.geoObjects.add(marker);
+        markers.push(marker);
+      });
+    }
+
+    function calculateAndDisplayRoute() {
+      if (markers.length >= 2) {
+        const multiRoute = new ymaps.multiRouter.MultiRoute({
+          referencePoints: markers.map(marker => marker.geometry.getCoordinates()),
+          params: {
+            routingMode: 'auto'
+          }
+        }, {
+          boundsAutoApply: true
+        });
+        map.geoObjects.add(multiRoute);
+
+      }
+      document.getElementById("remove-markers").addEventListener("click", () => {
+        markers.forEach(marker => map.geoObjects.remove(marker));
+        markers = [];
+        localStorage.removeItem("markers");
+        calculateAndDisplayRoute();
+      });
+      document.getElementById("remove-routes").addEventListener("click", () => {
+        map.geoObjects.each(function (geoObject) {
+          if (geoObject instanceof ymaps.multiRouter.MultiRoute) {
+            map.geoObjects.remove(geoObject);
+          }
+        });
+        calculateAndDisplayRoute();
+      });
+      document.getElementById("add-custom-marker").addEventListener("click", () => {
+    const promptText = prompt("Напишите название метки:");
+    if (promptText !== null && promptText.trim() !== "") {
+        const markerLocation = map.getCenter();
+        const customMarker = new ymaps.Placemark(markerLocation, {
+            hintContent: "Custom Marker",
+            balloonContent: promptText
+        });
+        map.geoObjects.add(customMarker);
+        markers.push(customMarker);
+        saveMarkersToLocalStorage();
+        
+        // Ask user to upload a photo
+        const photoURL = prompt("Добавьте ссылку на фото  (optional):");
+        if (photoURL !== null && photoURL.trim() !== "") {
+            customMarker.properties.set("photoURL", photoURL);
+        }
+        
+        // Ask user to leave a review
+        const review = prompt("Напишите отзыв (optional):");
+        if (review !== null && review.trim() !== "") {
+            customMarker.properties.set("review", review);
+        }
+        
+        // Display photo and review in balloon content
+        const balloonContent = customMarker.properties.get("balloonContent");
+        const photo = customMarker.properties.get("photoURL");
+        const reviewText = customMarker.properties.get("review");
+        if (photo && reviewText) {
+            customMarker.properties.set("balloonContent", `${balloonContent}<br><img src="${photo}" alt="Marker photo"><br>Review:${reviewText}`);
+        } else if (photo) {
+            customMarker.properties.set("balloonContent", `${balloonContent}<br><img src="${photo}" alt="Marker photo">`);
+        } else if (reviewText) {
+            customMarker.properties.set("balloonContent", `${balloonContent}<br>Review:${reviewText}`);
+        }
+        
+        // Save markers with additional properties to local storage
+        saveMarkersToLocalStorage();
+    }
+});
+
+
+
+
+    }     
+    
+  </script>
+    <input type="file" id="fileInput">
+    <canvas id="canvas"></canvas>
+
+    <h1>События и мероприятия</h1>
+    
+    <h2>Предстоящие события</h2>
+    <div id="events"></div>
+    
+    <h2>Моё расписание</h2>
+    <ul id="schedule"></ul>
+    
+    <h2>Добавить событие</h2>
+    <form id="eventForm">
+        <input type="text" id="eventName" placeholder="Название события" required>
+        <input type="datetime-local" id="eventDateTime" required>
+        <button type="submit">Добавить</button>
+    </form>
+</body>
+</html>

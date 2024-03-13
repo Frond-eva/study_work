@@ -3,6 +3,76 @@
     width: 500px;
     background-color: ghostwhite;
 }
+
 [class*="copyrights-pane"] {
     display: none !important;
   }
+
+  body {
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
+    margin: 0;
+    padding: 0;
+}
+
+header {
+    background-color: #333;
+    color: #fff;
+    padding: 20px;
+}
+
+h1 {
+    margin: 0;
+    text-align: center;
+    font-size: 24px;
+}
+
+main {
+    padding: 20px;
+}
+
+h2 {
+    font-size: 20px;
+    margin-bottom: 10px;
+}
+
+.events-section, .schedule-section {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    margin-top: 10px;
+}
+
+input[type="text"],
+input[type="datetime-local"],
+button[type="submit"] {
+    margin-bottom: 10px;
+}
+
+button[type="submit"] {
+    background-color: #333;
+    color: #fff;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+canvas {
+    display: block;
+    margin-bottom: 20px;
+    max-width: 100%;
+    height: auto;
+}
